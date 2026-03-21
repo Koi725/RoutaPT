@@ -55,8 +55,8 @@ services:
       - routapt-net
 
 volumes:
-  pgdata:
-    driver: local
+  - pgdata:/var/lib/postgresql/data
+  - ./routapt-backend/scripts/setup_db.sql:/docker-entrypoint-initdb.d/01_setup.sql
 
 networks:
   routapt-net:
