@@ -20,14 +20,13 @@ INSTALLED_APPS = [
     "django.contrib.gis",
     # Third party
     "rest_framework",
-    "rest_framework_simplejwt",
+    "rest_framework_gis",
     "corsheaders",
     # Our apps
     "apps.routing",
     "apps.incidents",
     "apps.pois",
     "apps.heatmap",
-    "apps.accounts",
 ]
 
 # Middleware
@@ -76,7 +75,9 @@ DATABASES = {
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserUniquePasswordValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -103,20 +104,13 @@ CORS_ALLOW_CREDENTIALS = True
 
 # DRF
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
-}
-
-# JWT
-from datetime import timedelta
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=24),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
+    ],
 }

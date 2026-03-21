@@ -1,3 +1,1 @@
-from django.contrib import admin
-
-# Register your models here.
+# No models to register — this app is a read-only aggregation layer.

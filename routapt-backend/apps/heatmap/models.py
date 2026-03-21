@@ -1,3 +1,1 @@
-from django.db import models
-
-# Create your models here.
+# No models — this app aggregates data from routing and incidents.
