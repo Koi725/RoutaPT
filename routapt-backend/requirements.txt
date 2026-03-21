@@ -14,3 +14,6 @@ gunicorn==22.0.0
 
 # Environment management
 python-decouple==3.8
+
+requests==2.32.3
+djangorestframework-gis==1.0
