@@ -1,0 +1,51 @@
+.env
+# ── Environment & secrets ──
+.env
+!.env.example
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# ── Django ──
+*.log
+db.sqlite3
+staticfiles/
+media/
+
+# ── Node / Next.js ──
+node_modules/
+.next/
+out/
+.turbo/
+
+# ── Docker ──
+# Don't ignore Dockerfiles or compose — those ARE infra code
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── GIS data (too large for Git) ──
+*.pbf
+*.osm
+*.shp
+*.dbf
+*.shx
+*.prj
