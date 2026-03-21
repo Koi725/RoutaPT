@@ -19,6 +19,41 @@ services:
     networks:
       - routapt-net
 
+  backend:
+    build:
+      context: ./routapt-backend
+      dockerfile: Dockerfile
+    container_name: routapt-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgis://routapt:${DB_PASSWORD}@db:5432/routapt
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-True}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CORS_ALLOWED_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - routapt-net
+
+  frontend:
+    build:
+      context: ./routapt-frontend
+      dockerfile: Dockerfile
+    container_name: routapt-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - routapt-net
+
 volumes:
   pgdata:
     driver: local
