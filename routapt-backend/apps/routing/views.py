@@ -22,7 +22,7 @@ class RouteView(APIView):
 
     Pipeline:
         1. Validate coordinates via serializer
-        2. Find nearest graph nodes (KNN with GiST index)
+        2. Find nearest graph nodes on actual roads
         3. Run pgr_dijkstra on the road network
         4. Merge edge geometries into a single LineString
         5. Return GeoJSON + distance + estimated duration
@@ -55,22 +55,24 @@ class RouteView(APIView):
         are not accessible through Django ORM.
         """
         with connection.cursor() as cursor:
-            # Step 1: Find nearest source node
+            # Step 1: Find nearest source node ON A ROAD
             cursor.execute(
                 """
-                SELECT id FROM planet_osm_line_vertices_pgr
-                ORDER BY the_geom <-> ST_SetSRID(ST_MakePoint(%s, %s), 4326)
+                SELECT source FROM planet_osm_line
+                WHERE highway IS NOT NULL AND source IS NOT NULL
+                ORDER BY way <-> ST_SetSRID(ST_MakePoint(%s, %s), 4326)
                 LIMIT 1
             """,
                 [origin.x, origin.y],
             )
             source_node = cursor.fetchone()[0]
 
-            # Step 2: Find nearest target node
+            # Step 2: Find nearest target node ON A ROAD
             cursor.execute(
                 """
-                SELECT id FROM planet_osm_line_vertices_pgr
-                ORDER BY the_geom <-> ST_SetSRID(ST_MakePoint(%s, %s), 4326)
+                SELECT source FROM planet_osm_line
+                WHERE highway IS NOT NULL AND source IS NOT NULL
+                ORDER BY way <-> ST_SetSRID(ST_MakePoint(%s, %s), 4326)
                 LIMIT 1
             """,
                 [destination.x, destination.y],
@@ -85,19 +87,15 @@ class RouteView(APIView):
                     SUM(ST_Length(r.way::geography)) / 1000 AS distance_km,
                     array_agg(r.name ORDER BY seq) AS street_names
                 FROM pgr_dijkstra(
-                    'SELECT osm_id AS id, source, target,
+                    'SELECT gid AS id, source, target,
                             ST_Length(way::geography) AS cost,
-                            CASE WHEN oneway = ''yes'' THEN 1000000
-                                 ELSE ST_Length(way::geography) END AS reverse_cost
+                            ST_Length(way::geography) AS reverse_cost
                      FROM planet_osm_line
-                     WHERE highway IN (
-                        ''motorway'',''trunk'',''primary'',''secondary'',
-                        ''tertiary'',''residential'',''unclassified'',
-                        ''motorway_link'',''trunk_link'',''primary_link''
-                     )',
-                    %s, %s, directed := true
+                     WHERE source IS NOT NULL AND target IS NOT NULL
+                     AND highway IS NOT NULL',
+                    %s, %s, directed := false
                 ) AS di
-                JOIN planet_osm_line r ON di.edge = r.osm_id
+                JOIN planet_osm_line r ON di.edge = r.gid
             """,
                 [source_node, target_node],
             )
