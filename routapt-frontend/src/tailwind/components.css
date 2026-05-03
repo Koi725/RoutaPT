@@ -14,58 +14,139 @@
 
 /* ── Mobile responsive ── */
 @media (max-width: 768px) {
-  .search {
-    width: calc(100vw - 32px);
-    top: 72px;
+  .brand {
+    top: 8px;
+    left: 8px;
+    padding: 6px 10px;
   }
 
-  .brand {
-    top: 12px;
-    left: 12px;
+  .brand-name {
+    font-size: 15px;
+  }
+
+  .search {
+    position: fixed;
+    top: 56px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    margin: 0;
+  }
+
+  .search-pill {
+    border-radius: 14px;
+    padding: 4px;
+  }
+
+  .search-input {
+    padding: 8px 10px;
+  }
+
+  .search-input input {
+    font-size: 13px;
+  }
+
+  .go-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+
+  .autocomplete {
+    border-radius: 14px;
   }
 
   .layers {
-    top: 72px;
-    right: auto;
-    left: 12px;
-    flex-wrap: wrap;
-    max-width: calc(100vw - 24px);
+    position: fixed;
+    top: 116px;
+    left: 8px;
+    right: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
 
-  .layer-btn span {
+  .layers::-webkit-scrollbar {
     display: none;
   }
 
+  .layer-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+    border-radius: 16px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
   .controls {
-    right: 12px;
+    right: 8px;
     top: auto;
-    bottom: 90px;
+    bottom: 88px;
     transform: none;
   }
 
+  .ctl, .ctl.geo, .ctl.compass {
+    width: 38px;
+    height: 38px;
+  }
+
   .route-card {
-    width: calc(100vw - 24px);
-    left: 12px;
-    bottom: 12px;
-    max-height: min(300px, 40vh) !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 18px 18px 0 0;
+    max-height: min(340px, 45vh) !important;
+  }
+
+  .rc-head {
+    padding: 14px 16px 10px;
   }
 
   .rc-time {
-    font-size: 24px;
+    font-size: 26px;
+  }
+
+  .rc-steps {
+    max-height: 200px;
+  }
+
+  .rc-step {
+    padding: 10px 16px;
   }
 
   .fab-stack {
-    bottom: 12px;
-    right: 12px;
+    bottom: 8px;
+    right: 8px;
+  }
+
+  .fab {
+    width: 50px;
+    height: 50px;
+  }
+
+  .stats-pill {
+    font-size: 12px;
+    padding: 7px 12px;
   }
 
   .stats-panel {
-    width: calc(100vw - 24px);
-    right: 12px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 18px 18px 0 0;
+    max-height: 60vh;
+    overflow-y: auto;
   }
 
   .sheet {
     width: 100vw;
+    max-height: 80vh;
     border-radius: 18px 18px 0 0;
   }
 
@@ -78,28 +159,51 @@
     padding: 10px 4px;
   }
 
+  .type-card .ic {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
   .type-card .lbl {
     font-size: 10px;
   }
+
+  .severity {
+    gap: 6px;
+  }
+
+  .sev-btn {
+    padding: 9px;
+    font-size: 12px;
+  }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 380px) {
   .search {
-    width: calc(100vw - 16px);
-    top: 64px;
+    top: 52px;
   }
 
   .search-pill {
     flex-wrap: wrap;
   }
 
+  .swap-btn {
+    order: 3;
+  }
+
   .go-btn {
     width: 100%;
     justify-content: center;
-    margin-top: 4px;
+    order: 4;
+    margin-top: 2px;
   }
 
   .layers {
-    top: 130px;
+    top: 120px;
+  }
+
+  .layer-btn span {
+    display: none;
   }
 }

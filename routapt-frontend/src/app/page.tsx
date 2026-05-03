@@ -49,6 +49,7 @@ export default function Home() {
   const [statsData, setStatsData] = useState<StatsData | null>(null);
 
   const [isCalculating, setIsCalculating] = useState(false);
+  const [calcStep, setCalcStep] = useState(0);
   // Pin drop for incidents
   const [pinDropMode, setPinDropMode] = useState(false);
   const [pinLocation, setPinLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -72,7 +73,7 @@ export default function Home() {
 
     try {
       setIsCalculating(true);
-      toast.show("Geocoding addresses...");
+      setCalcStep(1);
 
       const [fromResults, toResults] = await Promise.all([
         geocodeSearch(from),
@@ -85,21 +86,29 @@ export default function Home() {
         return;
       }
 
+      setCalcStep(2);
       const fromCoord: [number, number] = [fromResults[0].lat, fromResults[0].lon];
       const toCoord: [number, number] = [toResults[0].lat, toResults[0].lon];
-
       setOrigin(fromCoord);
       setDestination(toCoord);
 
-      toast.show("Calculating shortest path...");
+      setCalcStep(3);
+      await new Promise(r => setTimeout(r, 400));
 
+      setCalcStep(4);
       const route = await calculateRoute(fromCoord[0], fromCoord[1], toCoord[0], toCoord[1]);
+
+      setCalcStep(5);
+      await new Promise(r => setTimeout(r, 300));
+
       setRouteData(route);
       setRouteOpen(true);
       setIsCalculating(false);
+      setCalcStep(0);
       toast.show(`Route found — ${route.distance_km} km`);
     } catch (err) {
       setIsCalculating(false);
+      setCalcStep(0);
       toast.show("Route calculation failed");
       console.error(err);
     }
@@ -206,36 +215,66 @@ export default function Home() {
 
       <Toast message={toast.message} />
 
-      {isCalculating && (
+{isCalculating && (
         <div style={{
           position: "fixed",
           inset: 0,
           zIndex: 1500,
-          background: "rgba(255,255,255,0.6)",
-          backdropFilter: "blur(4px)",
+          background: "rgba(255,255,255,0.5)",
+          backdropFilter: "blur(6px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          animation: "fade-in 0.2s ease",
         }}>
           <div style={{
-            background: "rgba(255,255,255,0.95)",
-            borderRadius: 20,
-            padding: "32px 40px",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.1)",
+            background: "rgba(255,255,255,0.97)",
+            borderRadius: 22,
+            padding: "36px 44px",
+            boxShadow: "0 12px 48px rgba(0,0,0,0.1)",
             textAlign: "center",
-            animation: "slide-up 0.3s ease",
+            animation: "slide-up 0.3s cubic-bezier(0.16,1,0.3,1)",
+            minWidth: 300,
           }}>
             <div style={{
-              width: 48,
-              height: 48,
+              width: 52,
+              height: 52,
               border: "3px solid #e8e5de",
               borderTopColor: "#0d9488",
               borderRadius: "50%",
-              margin: "0 auto 16px",
+              margin: "0 auto 20px",
               animation: "spin 0.8s linear infinite",
             }} />
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#1a1a1a" }}>Calculating route</div>
-            <div style={{ fontSize: 13, color: "#999", marginTop: 4 }}>Finding fastest path via pgRouting...</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a", letterSpacing: "-0.02em" }}>
+              {calcStep <= 1 && "Geocoding addresses"}
+              {calcStep === 2 && "Addresses resolved"}
+              {calcStep === 3 && "Connecting to road network"}
+              {calcStep === 4 && "Running Dijkstra algorithm"}
+              {calcStep === 5 && "Building route geometry"}
+            </div>
+            <div style={{ fontSize: 13, color: "#999", marginTop: 6 }}>
+              {calcStep <= 1 && "Looking up coordinates for your locations..."}
+              {calcStep === 2 && "Found both points on the map"}
+              {calcStep === 3 && "Locating nearest road nodes in Portugal..."}
+              {calcStep === 4 && "Analyzing 682,612 road segments for optimal path..."}
+              {calcStep === 5 && "Merging road geometries into route line..."}
+            </div>
+            <div style={{
+              display: "flex",
+              gap: 6,
+              justifyContent: "center",
+              marginTop: 20,
+            }}>
+              {[1, 2, 3, 4, 5].map((s) => (
+                <div key={s} style={{
+                  width: s <= calcStep ? 24 : 8,
+                  height: 8,
+                  borderRadius: 4,
+                  background: s <= calcStep ? "#0d9488" : "#e8e5de",
+                  transition: "all 0.3s cubic-bezier(0.16,1,0.3,1)",
+                }} />
+              ))}
+            </div>
           </div>
         </div>
       )}
