@@ -1,2 +1,2 @@
 export * from "./icons";
-export type { IconProps } from "./icons-types";s
+export type { IconProps } from "./icons-types";
