@@ -8,3 +8,12 @@
   width: 100%;
   height: 100%;
 }
+
+/* Clean up Leaflet default styles */
+.leaflet-control-attribution {
+  font-size: 10px !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(4px);
+  border-radius: 6px 0 0 0 !important;
+  padding: 2px 8px !important;
+}

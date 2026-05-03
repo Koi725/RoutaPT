@@ -7,27 +7,36 @@
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 14px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  animation: panel-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s ease;
+}
+
+.brand:hover {
+  transform: translateY(-1px);
 }
 
 .brand-mark {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: #0d9488;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #0d9488, #0f766e);
   color: white;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
 }
 
 .brand-name {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   color: #1a1a1a;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .brand-name em {
@@ -35,5 +44,6 @@
   color: #0d9488;
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: #0d948844;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(13, 148, 136, 0.3);
 }
