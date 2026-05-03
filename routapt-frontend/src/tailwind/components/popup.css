@@ -1,0 +1,53 @@
+.popup {
+  position: fixed;
+  z-index: 1001;
+  background: white;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 260px;
+  border: 1px solid #e8e5de;
+}
+
+.popup .ttl {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.popup .badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #0d948815;
+  color: #0d9488;
+}
+
+.popup .meta {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.popup .row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.mini-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #e8e5de;
+  background: #fafaf8;
+  font-size: 12px;
+  cursor: pointer;
+  color: #666;
+}
+
+.mini-btn:hover {
+  background: #f0eeea;
+}
