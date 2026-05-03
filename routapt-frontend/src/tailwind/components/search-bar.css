@@ -1,10 +1,11 @@
 .search {
   position: fixed;
   top: 16px;
-  left: calc(50% + 40px);
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
   z-index: 1000;
   width: min(520px, calc(100vw - 340px));
+  margin: 0 auto;
   animation: panel-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 }
 

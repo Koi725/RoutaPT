@@ -48,6 +48,7 @@ export default function Home() {
   const [statsOpen, setStatsOpen] = useState(false);
   const [statsData, setStatsData] = useState<StatsData | null>(null);
 
+  const [isCalculating, setIsCalculating] = useState(false);
   // Pin drop for incidents
   const [pinDropMode, setPinDropMode] = useState(false);
   const [pinLocation, setPinLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -63,7 +64,6 @@ export default function Home() {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
-  // Calculate route
   const handleRoute = useCallback(async () => {
     if (!from || !to) {
       toast.show("Enter origin and destination");
@@ -71,9 +71,9 @@ export default function Home() {
     }
 
     try {
-      toast.show("Calculating route...");
+      setIsCalculating(true);
+      toast.show("Geocoding addresses...");
 
-      // Geocode both addresses
       const [fromResults, toResults] = await Promise.all([
         geocodeSearch(from),
         geocodeSearch(to),
@@ -81,6 +81,7 @@ export default function Home() {
 
       if (!fromResults.length || !toResults.length) {
         toast.show("Could not find one or both addresses");
+        setIsCalculating(false);
         return;
       }
 
@@ -90,11 +91,15 @@ export default function Home() {
       setOrigin(fromCoord);
       setDestination(toCoord);
 
+      toast.show("Calculating shortest path...");
+
       const route = await calculateRoute(fromCoord[0], fromCoord[1], toCoord[0], toCoord[1]);
       setRouteData(route);
       setRouteOpen(true);
+      setIsCalculating(false);
       toast.show(`Route found — ${route.distance_km} km`);
     } catch (err) {
+      setIsCalculating(false);
       toast.show("Route calculation failed");
       console.error(err);
     }
@@ -200,6 +205,40 @@ export default function Home() {
       )}
 
       <Toast message={toast.message} />
+
+      {isCalculating && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 1500,
+          background: "rgba(255,255,255,0.6)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+          <div style={{
+            background: "rgba(255,255,255,0.95)",
+            borderRadius: 20,
+            padding: "32px 40px",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.1)",
+            textAlign: "center",
+            animation: "slide-up 0.3s ease",
+          }}>
+            <div style={{
+              width: 48,
+              height: 48,
+              border: "3px solid #e8e5de",
+              borderTopColor: "#0d9488",
+              borderRadius: "50%",
+              margin: "0 auto 16px",
+              animation: "spin 0.8s linear infinite",
+            }} />
+            <div style={{ fontSize: 16, fontWeight: 600, color: "#1a1a1a" }}>Calculating route</div>
+            <div style={{ fontSize: 13, color: "#999", marginTop: 4 }}>Finding fastest path via pgRouting...</div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -10,3 +10,96 @@
 @import "./components/toast.css";
 @import "./components/popup.css";
 @import "./components/animations.css";
+
+
+/* ── Mobile responsive ── */
+@media (max-width: 768px) {
+  .search {
+    width: calc(100vw - 32px);
+    top: 72px;
+  }
+
+  .brand {
+    top: 12px;
+    left: 12px;
+  }
+
+  .layers {
+    top: 72px;
+    right: auto;
+    left: 12px;
+    flex-wrap: wrap;
+    max-width: calc(100vw - 24px);
+  }
+
+  .layer-btn span {
+    display: none;
+  }
+
+  .controls {
+    right: 12px;
+    top: auto;
+    bottom: 90px;
+    transform: none;
+  }
+
+  .route-card {
+    width: calc(100vw - 24px);
+    left: 12px;
+    bottom: 12px;
+    max-height: min(300px, 40vh) !important;
+  }
+
+  .rc-time {
+    font-size: 24px;
+  }
+
+  .fab-stack {
+    bottom: 12px;
+    right: 12px;
+  }
+
+  .stats-panel {
+    width: calc(100vw - 24px);
+    right: 12px;
+  }
+
+  .sheet {
+    width: 100vw;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .type-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .type-card {
+    padding: 10px 4px;
+  }
+
+  .type-card .lbl {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search {
+    width: calc(100vw - 16px);
+    top: 64px;
+  }
+
+  .search-pill {
+    flex-wrap: wrap;
+  }
+
+  .go-btn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .layers {
+    top: 130px;
+  }
+}
