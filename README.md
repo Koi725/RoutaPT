@@ -228,9 +228,3 @@ Open `http://localhost:3000` and start navigating Portugal.
 **Kousha Rezaei**
 
 [Portfolio](https://www.kousharezaei.dev) · [GitHub](https://github.com/Koi725)
-
----
-
-## License
-
-MIT
