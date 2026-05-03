@@ -1,0 +1,39 @@
+.brand {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #0d9488;
+  color: white;
+}
+
+.brand-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+}
+
+.brand-name em {
+  font-style: normal;
+  color: #0d9488;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: #0d948844;
+}

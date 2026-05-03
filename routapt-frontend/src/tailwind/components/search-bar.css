@@ -1,0 +1,158 @@
+.search {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: min(580px, calc(100vw - 200px));
+}
+
+.search-pill {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+  padding: 6px;
+  border: 1px solid #e8e5de;
+}
+
+.search-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  padding: 8px 12px;
+}
+
+.search-input .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.search-input.from .dot {
+  background: #0d9488;
+}
+
+.search-input.to .dot {
+  background: #dc2626;
+}
+
+.search-input input {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-family: inherit;
+  width: 100%;
+  background: transparent;
+  color: #1a1a1a;
+}
+
+.search-input input::placeholder {
+  color: #a0a0a0;
+}
+
+.swap-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e8e5de;
+  background: #fafaf8;
+  color: #666;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.swap-btn:hover {
+  background: #f0eeea;
+  color: #333;
+}
+
+.swap-btn.spin {
+  transform: rotate(180deg);
+}
+
+.go-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 12px;
+  border: none;
+  background: #0d9488;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.go-btn:hover {
+  background: #0f766e;
+}
+
+.autocomplete {
+  margin-top: 8px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  border: 1px solid #e8e5de;
+}
+
+.ac-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ac-row:hover,
+.ac-row.active {
+  background: #f5f3ef;
+}
+
+.ac-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f0eeea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.ac-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.ac-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.ac-sub {
+  font-size: 12px;
+  color: #888;
+  margin-top: 1px;
+}
+
+.ac-meta {
+  font-size: 12px;
+  color: #aaa;
+  flex-shrink: 0;
+}

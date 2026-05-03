@@ -1,0 +1,96 @@
+.stats-panel {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 1001;
+  width: min(340px, calc(100vw - 32px));
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  padding: 20px;
+  border: 1px solid #e8e5de;
+}
+
+.stats-panel h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.x-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #e8e5de;
+  background: #fafaf8;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-cell {
+  padding: 12px;
+  background: #fafaf8;
+  border-radius: 10px;
+  border: 1px solid #f0eeea;
+}
+
+.stat-cell .v {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.stat-cell .l {
+  font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.bar-row .lbl {
+  width: 100px;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.bar-row .bar {
+  flex: 1;
+  height: 6px;
+  background: #f0eeea;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bar-row .bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.bar-row .pct {
+  width: 32px;
+  text-align: right;
+  color: #888;
+}

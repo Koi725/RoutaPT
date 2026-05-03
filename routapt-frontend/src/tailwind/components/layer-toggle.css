@@ -1,0 +1,50 @@
+.layers {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  gap: 6px;
+}
+
+.layer-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #e8e5de;
+  background: white;
+  color: #888;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.layer-btn:hover {
+  border-color: #ccc;
+  color: #555;
+}
+
+.layer-btn.on {
+  background: #0d9488;
+  color: white;
+  border-color: #0d9488;
+}
+
+.layer-btn.on.accent-blue {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.layer-btn.on.accent-coral {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.layer-btn.on.accent-amber {
+  background: #d97706;
+  border-color: #d97706;
+}

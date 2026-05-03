@@ -1,0 +1,138 @@
+.route-card {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 1000;
+  width: min(400px, calc(100vw - 32px));
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  border: 1px solid #e8e5de;
+}
+
+.rc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.rc-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rc-time {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1;
+}
+
+.rc-time small {
+  font-size: 14px;
+  font-weight: 400;
+  color: #888;
+}
+
+.rc-dist {
+  font-size: 13px;
+  color: #666;
+}
+
+.rc-eta {
+  font-size: 12px;
+  color: #0d9488;
+  font-weight: 500;
+}
+
+.rc-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e8e5de;
+  background: #fafaf8;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rc-modes {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px 12px;
+}
+
+.rc-mode {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #e8e5de;
+  background: transparent;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rc-mode.active {
+  background: #0d9488;
+  color: white;
+  border-color: #0d9488;
+}
+
+.rc-steps {
+  max-height: 320px;
+  overflow-y: auto;
+  border-top: 1px solid #f0eeea;
+}
+
+.rc-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f8f6f2;
+}
+
+.rc-step .icon {
+  color: #0d9488;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.rc-step .text {
+  flex: 1;
+  font-size: 14px;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.rc-step .text small {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.rc-step .dist {
+  font-size: 12px;
+  color: #aaa;
+  flex-shrink: 0;
+}
+
+.rc-step.warn {
+  background: #fef3cd;
+}
+
+.rc-step.warn .icon {
+  color: #d97706;
+}
