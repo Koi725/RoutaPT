@@ -143,10 +143,33 @@ export const MapView = ({
     const map = mapRef.current;
     if (!map) return;
 
+    map.on("locationfound", (e) => {
+      L.circleMarker(e.latlng, {
+        radius: 8,
+        fillColor: "#4285F4",
+        fillOpacity: 1,
+        color: "#fff",
+        weight: 3,
+      }).addTo(map);
+
+      L.circle(e.latlng, {
+        radius: e.accuracy / 2,
+        fillColor: "#4285F4",
+        fillOpacity: 0.1,
+        color: "#4285F4",
+        weight: 1,
+      }).addTo(map);
+    });
+
+    map.on("locationerror", (e) => {
+      console.error("Location error:", e.message);
+    });
+
+     
     (window as any).__routaptMap = {
       zoomIn: () => map.zoomIn(),
       zoomOut: () => map.zoomOut(),
-      locate: () => map.locate({ setView: true, maxZoom: 14 }),
+      locate: () => map.locate({ setView: true, maxZoom: 17, enableHighAccuracy: true }),
     };
   }, []);
 

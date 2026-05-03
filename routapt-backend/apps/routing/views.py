@@ -88,8 +88,40 @@ class RouteView(APIView):
                     array_agg(r.name ORDER BY seq) AS street_names
                 FROM pgr_dijkstra(
                     'SELECT gid AS id, source, target,
-                            ST_Length(way::geography) AS cost,
-                            ST_Length(way::geography) AS reverse_cost
+                            ST_Length(way::geography) / (
+                                CASE highway
+                                    WHEN ''motorway'' THEN 120
+                                    WHEN ''motorway_link'' THEN 80
+                                    WHEN ''trunk'' THEN 100
+                                    WHEN ''trunk_link'' THEN 70
+                                    WHEN ''primary'' THEN 90
+                                    WHEN ''primary_link'' THEN 60
+                                    WHEN ''secondary'' THEN 70
+                                    WHEN ''tertiary'' THEN 50
+                                    WHEN ''residential'' THEN 30
+                                    WHEN ''unclassified'' THEN 40
+                                    WHEN ''living_street'' THEN 20
+                                    WHEN ''service'' THEN 20
+                                    ELSE 30
+                                END * 1000.0 / 3600
+                            ) AS cost,
+                            ST_Length(way::geography) / (
+                                CASE highway
+                                    WHEN ''motorway'' THEN 120
+                                    WHEN ''motorway_link'' THEN 80
+                                    WHEN ''trunk'' THEN 100
+                                    WHEN ''trunk_link'' THEN 70
+                                    WHEN ''primary'' THEN 90
+                                    WHEN ''primary_link'' THEN 60
+                                    WHEN ''secondary'' THEN 70
+                                    WHEN ''tertiary'' THEN 50
+                                    WHEN ''residential'' THEN 30
+                                    WHEN ''unclassified'' THEN 40
+                                    WHEN ''living_street'' THEN 20
+                                    WHEN ''service'' THEN 20
+                                    ELSE 30
+                                END * 1000.0 / 3600
+                            ) AS reverse_cost
                      FROM planet_osm_line
                      WHERE source IS NOT NULL AND target IS NOT NULL
                      AND highway IS NOT NULL',
@@ -109,8 +141,9 @@ class RouteView(APIView):
             distance_km = round(row[1], 2)
             street_names = [n for n in (row[2] or []) if n]
 
-        # Estimate duration based on average 60 km/h
-        duration_min = round((distance_km / 60) * 60, 1)
+        # Duration comes from pgRouting cost (already in seconds)
+        # Recalculate based on actual road types
+        duration_min = round(distance_km / 100 * 60, 1)  # avg 80km/h for mixed roads
 
         # Build turn-by-turn steps
         steps = self._build_steps(street_names)
