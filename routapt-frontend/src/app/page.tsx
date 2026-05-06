@@ -1,21 +1,20 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 
 import { Brand } from "@/components/brand";
 import { SearchBar } from "@/components/search-bar";
 import { LayerToggle, LayerState } from "@/components/layer-toggle";
 import { MapControls } from "@/components/map-controls";
-import { RouteCard, RouteData } from "@/components/route-card";
+import { RouteCard, RouteData, ModeEstimate } from "@/components/route-card";
 import { Fab } from "@/components/fab";
 import { StatsPanel, StatsData } from "@/components/stats-panel";
 import { IncidentPanel, IncidentFormData } from "@/components/incident-panel";
 import { Toast } from "@/components/toast";
 import { useToast } from "@/hooks/use-toast";
 
-import { calculateRoute } from "@/lib/routing/routing.api";
-import { geocodeSearch } from "@/lib/geocode/geocode.api";
+import { calculateRoute, geocodeSearch, TravelMode } from "@/lib/routing/routing.api";
 import { createIncident } from "@/lib/incidents/incidents.api";
 import { getNetworkStats } from "@/lib/heatmap/heatmap.api";
 
@@ -34,6 +33,8 @@ export default function Home() {
   const [routeOpen, setRouteOpen] = useState(true);
   const [origin, setOrigin] = useState<[number, number] | null>(null);
   const [destination, setDestination] = useState<[number, number] | null>(null);
+  const [activeMode, setActiveMode] = useState<string>("drive");
+  const [modeEstimates, setModeEstimates] = useState<ModeEstimate[]>([]);
 
   // Layer state
   const [layers, setLayers] = useState<LayerState>({
@@ -48,8 +49,10 @@ export default function Home() {
   const [statsOpen, setStatsOpen] = useState(false);
   const [statsData, setStatsData] = useState<StatsData | null>(null);
 
+  // Loading state
   const [isCalculating, setIsCalculating] = useState(false);
   const [calcStep, setCalcStep] = useState(0);
+
   // Pin drop for incidents
   const [pinDropMode, setPinDropMode] = useState(false);
   const [pinLocation, setPinLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -65,6 +68,7 @@ export default function Home() {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
+  // Calculate route with all three modes
   const handleRoute = useCallback(async () => {
     if (!from || !to) {
       toast.show("Enter origin and destination");
@@ -83,6 +87,7 @@ export default function Home() {
       if (!fromResults.length || !toResults.length) {
         toast.show("Could not find one or both addresses");
         setIsCalculating(false);
+        setCalcStep(0);
         return;
       }
 
@@ -96,16 +101,41 @@ export default function Home() {
       await new Promise(r => setTimeout(r, 400));
 
       setCalcStep(4);
-      const route = await calculateRoute(fromCoord[0], fromCoord[1], toCoord[0], toCoord[1]);
+
+      // Calculate all three modes in parallel
+      const [driveRoute, walkRoute, bikeRoute] = await Promise.allSettled([
+        calculateRoute(fromCoord[0], fromCoord[1], toCoord[0], toCoord[1], "drive"),
+        calculateRoute(fromCoord[0], fromCoord[1], toCoord[0], toCoord[1], "walk"),
+        calculateRoute(fromCoord[0], fromCoord[1], toCoord[0], toCoord[1], "bike"),
+      ]);
 
       setCalcStep(5);
       await new Promise(r => setTimeout(r, 300));
 
-      setRouteData(route);
+      // Use drive as primary
+      const primaryRoute = driveRoute.status === "fulfilled" ? driveRoute.value : null;
+
+      if (!primaryRoute) {
+        toast.show("Route calculation failed");
+        setIsCalculating(false);
+        setCalcStep(0);
+        return;
+      }
+
+      setRouteData(primaryRoute);
+      setActiveMode("drive");
       setRouteOpen(true);
+
+      // Build mode estimates from successful results
+      const estimates: ModeEstimate[] = [];
+      if (driveRoute.status === "fulfilled") estimates.push({ mode: "drive", duration_min: driveRoute.value.duration_min, label: "Drive" });
+      if (walkRoute.status === "fulfilled") estimates.push({ mode: "walk", duration_min: walkRoute.value.duration_min, label: "Walk" });
+      if (bikeRoute.status === "fulfilled") estimates.push({ mode: "bike", duration_min: bikeRoute.value.duration_min, label: "Bike" });
+      setModeEstimates(estimates);
+
       setIsCalculating(false);
       setCalcStep(0);
-      toast.show(`Route found — ${route.distance_km} km`);
+      toast.show(`Route found — ${primaryRoute.distance_km} km`);
     } catch (err) {
       setIsCalculating(false);
       setCalcStep(0);
@@ -113,6 +143,20 @@ export default function Home() {
       console.error(err);
     }
   }, [from, to, toast]);
+
+  // Switch travel mode
+  const handleModeChange = useCallback(async (mode: string) => {
+    if (!origin || !destination) return;
+    setActiveMode(mode);
+    toast.show(`Switching to ${mode} route...`);
+
+    try {
+      const route = await calculateRoute(origin[0], origin[1], destination[0], destination[1], mode as TravelMode);
+      setRouteData(route);
+    } catch (err) {
+      toast.show(`${mode} route not available`);
+    }
+  }, [origin, destination, toast]);
 
   // Handle pin drop for incidents
   const handlePinDrop = useCallback((lat: number, lon: number) => {
@@ -189,6 +233,9 @@ export default function Home() {
         data={routeData}
         isOpen={routeOpen}
         onToggle={() => setRouteOpen(!routeOpen)}
+        modeEstimates={modeEstimates}
+        activeMode={activeMode}
+        onModeChange={handleModeChange}
       />
 
       {!reportOpen && !statsOpen && (
@@ -215,7 +262,7 @@ export default function Home() {
 
       <Toast message={toast.message} />
 
-{isCalculating && (
+      {isCalculating && (
         <div style={{
           position: "fixed",
           inset: 0,
