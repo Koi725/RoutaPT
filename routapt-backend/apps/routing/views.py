@@ -143,7 +143,7 @@ class RouteView(APIView):
 
         # Duration comes from pgRouting cost (already in seconds)
         # Recalculate based on actual road types
-        duration_min = round(distance_km / 100 * 60, 1)  # avg 80km/h for mixed roads
+        duration_min = round(distance_km / 100 * 60, 1)  # avg 100km/h for mixed roads
 
         # Build turn-by-turn steps
         steps = self._build_steps(street_names)

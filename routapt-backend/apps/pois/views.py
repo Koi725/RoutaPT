@@ -1,6 +1,7 @@
 from django.contrib.gis.geos import Polygon, GEOSGeometry
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db import connection
 
 from .models import PointOfInterest, SpeedCamera
 from .serializers import (
@@ -120,3 +121,45 @@ class NearRouteView(APIView):
                 "cameras": SpeedCameraSerializer(cameras, many=True).data,
             }
         )
+
+
+class POISearchView(APIView):
+    """
+    Search POIs by name in the database.
+
+    GET /api/pois/search/?q=norte+shopping
+    """
+
+    def get(self, request):
+        query = request.query_params.get("q", "").strip()
+        if len(query) < 2:
+            return Response([])
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT 
+                    name,
+                    COALESCE(amenity, tourism, shop, '') AS category,
+                    ST_Y(way) AS lat,
+                    ST_X(way) AS lon
+                FROM planet_osm_point
+                WHERE name ILIKE %s
+                AND name IS NOT NULL
+                ORDER BY name
+                LIMIT 10
+            """,
+                [f"%{query}%"],
+            )
+
+            results = [
+                {
+                    "display_name": row[0],
+                    "category": row[1],
+                    "lat": row[2],
+                    "lon": row[3],
+                }
+                for row in cursor.fetchall()
+            ]
+
+        return Response(results)

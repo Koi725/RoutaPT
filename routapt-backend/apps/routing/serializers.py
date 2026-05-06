@@ -9,6 +9,11 @@ class RouteRequestSerializer(serializers.Serializer):
     from_lon = serializers.FloatField(min_value=-180, max_value=180)
     to_lat = serializers.FloatField(min_value=-90, max_value=90)
     to_lon = serializers.FloatField(min_value=-180, max_value=180)
+    mode = serializers.ChoiceField(
+        choices=["drive", "walk", "bike"],
+        default="drive",
+        required=False,
+    )
 
 
 class RouteResponseSerializer(serializers.Serializer):
@@ -18,6 +23,7 @@ class RouteResponseSerializer(serializers.Serializer):
     distance_km = serializers.FloatField()
     duration_min = serializers.FloatField()
     steps = serializers.ListField(child=serializers.DictField())
+    mode = serializers.CharField(default="drive")
 
 
 class GeocodeRequestSerializer(serializers.Serializer):
