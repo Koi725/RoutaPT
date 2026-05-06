@@ -149,12 +149,18 @@ export default function Home() {
   const handleModeChange = useCallback(async (mode: string) => {
     if (!origin || !destination) return;
     setActiveMode(mode);
-    toast.show(`Switching to ${mode} route...`);
+    setIsCalculating(true);
+    setCalcStep(4);
 
     try {
       const route = await calculateRoute(origin[0], origin[1], destination[0], destination[1], mode as TravelMode);
       setRouteData(route);
+      setIsCalculating(false);
+      setCalcStep(0);
+      toast.show(`${mode} route — ${route.distance_km} km`);
     } catch (err) {
+      setIsCalculating(false);
+      setCalcStep(0);
       toast.show(`${mode} route not available`);
     }
   }, [origin, destination, toast]);
