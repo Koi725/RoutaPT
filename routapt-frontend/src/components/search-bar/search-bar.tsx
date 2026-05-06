@@ -25,7 +25,7 @@ export const SearchBar = ({ from, to, onFromChange, onToChange, onRoute }: Searc
 
   useEffect(() => {
     if (debouncedQuery.length < 2) {
-      setSuggestions([]);
+      Promise.resolve().then(() => setSuggestions([]));
       return;
     }
 

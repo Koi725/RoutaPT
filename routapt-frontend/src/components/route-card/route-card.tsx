@@ -27,7 +27,7 @@ export const RouteCard = ({ data, isOpen, onToggle, modeEstimates, activeMode, o
             <div className="rc-dist mono">{data.distance_km} km</div>
             <div style={{ marginTop: 4 }}>
               <span className="rc-eta">
-                Arrives {new Date(Date.now() + data.duration_min * 60000).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+                Arrives~{Math.round(data.duration_min)} min from now
               </span>
             </div>
           </div>
