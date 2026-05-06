@@ -58,15 +58,33 @@ export const MapView = ({
 
     const handler = (e: L.LeafletMouseEvent) => {
       if (pinDropMode) {
+        // Add a visual marker at the clicked location
+        const marker = L.circleMarker(e.latlng, {
+          radius: 8,
+          fillColor: "#dc2626",
+          fillOpacity: 1,
+          color: "#fff",
+          weight: 3,
+        }).addTo(map);
+
+        // Remove after 30 seconds or when a new pin is dropped
+        setTimeout(() => map.removeLayer(marker), 30000);
+
         onPinDrop(e.latlng.lat, e.latlng.lng);
       }
     };
 
     map.on("click", handler);
-    map.getContainer().style.cursor = pinDropMode ? "crosshair" : "";
+
+    if (pinDropMode) {
+      map.getContainer().style.cursor = "crosshair";
+    } else {
+      map.getContainer().style.cursor = "";
+    }
 
     return () => {
       map.off("click", handler);
+      map.getContainer().style.cursor = "";
     };
   }, [pinDropMode, onPinDrop]);
 
