@@ -10,6 +10,7 @@ class Road(models.Model):
     pgRouting topology adds 'source' and 'target' node columns.
     """
 
+    gid = models.IntegerField(primary_key=True)
     osm_id = models.BigIntegerField()
     name = models.CharField(max_length=255, blank=True, null=True)
     highway = models.CharField(max_length=64, blank=True, null=True)
@@ -55,6 +56,7 @@ class RoadNode(models.Model):
     point in the road network graph.
     """
 
+    id = models.BigIntegerField(primary_key=True)
     the_geom = models.PointField(srid=4326)
 
     class Meta:

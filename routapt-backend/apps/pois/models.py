@@ -20,7 +20,7 @@ class PointOfInterest(models.Model):
         "bank": ["bank", "atm"],
     }
 
-    osm_id = models.BigIntegerField()
+    osm_id = models.BigIntegerField(primary_key=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     amenity = models.CharField(max_length=64, blank=True, null=True)
     tourism = models.CharField(max_length=64, blank=True, null=True)
