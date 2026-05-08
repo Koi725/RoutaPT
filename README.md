@@ -88,6 +88,6 @@ See **SETUP.md** for detailed instructions including OSM data import.
 
 ## Author
 
-**Kousha Rezaei** — [Portfolio](https://www.kodelabs.me) · [GitHub](https://github.com/Koi725)
+**Kousha Rezaei** — [Portfolio](www.kousharezaei.dev/en) · [GitHub](https://github.com/Koi725)
 
 MIT License — Use it, learn from it. If it helps you pass your GIS course, that's a win. 🎓
