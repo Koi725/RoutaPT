@@ -30,6 +30,7 @@ export const MapView = ({
   origin,
   destination,
   pinDropMode,
+  pinLocation,
   onPinDrop,
   onBoundsChange,
 }: MapViewProps) => {
@@ -41,6 +42,7 @@ export const MapView = ({
   const poiLayerRef = useRef<L.LayerGroup | null>(null);
   const cameraLayerRef = useRef<L.LayerGroup | null>(null);
   const heatLayerRef = useRef<L.HeatLayer | null>(null);
+  const pinMarkerRef = useRef<L.Marker | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Initialize map
@@ -78,21 +80,15 @@ export const MapView = ({
     };
   }, []);
 
-  // Handle click for pin drop
+  // Handle click for pin drop — only forwards the latlng to the parent.
+  // The pin marker itself is rendered from the pinLocation prop below,
+  // so it persists until the form is submitted or cancelled.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
     const handler = (e: L.LeafletMouseEvent) => {
       if (pinDropMode) {
-        const marker = L.circleMarker(e.latlng, {
-          radius: 8,
-          fillColor: "#dc2626",
-          fillOpacity: 1,
-          color: "#fff",
-          weight: 3,
-        }).addTo(map);
-        setTimeout(() => map.removeLayer(marker), 30000);
         onPinDrop(e.latlng.lat, e.latlng.lng);
       }
     };
@@ -105,6 +101,30 @@ export const MapView = ({
       map.getContainer().style.cursor = "";
     };
   }, [pinDropMode, onPinDrop]);
+
+  // Render the dropped pin marker from pinLocation prop
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (pinMarkerRef.current) {
+      map.removeLayer(pinMarkerRef.current);
+      pinMarkerRef.current = null;
+    }
+
+    if (pinLocation) {
+      const icon = L.divIcon({
+        html: `<div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 8px rgba(220,38,38,0.45))">
+          <svg width="28" height="40" viewBox="0 0 24 36"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#dc2626" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="#fff"/></svg>
+        </div>`,
+        iconSize: [36, 40],
+        iconAnchor: [18, 38],
+        className: "",
+      });
+      const marker = L.marker([pinLocation.lat, pinLocation.lon], { icon }).addTo(map);
+      pinMarkerRef.current = marker;
+    }
+  }, [pinLocation]);
 
   // Draw route
   useEffect(() => {

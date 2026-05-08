@@ -1,4 +1,5 @@
 from django.contrib.gis.geos import Point
+from django.core.cache import cache
 from django.db import connection
 from rest_framework import status
 from rest_framework.response import Response
@@ -10,6 +11,7 @@ from .serializers import (
     GeocodeRequestSerializer,
 )
 
+import hashlib
 import requests
 import json
 
@@ -103,7 +105,18 @@ class RouteView(APIView):
         Uses raw SQL because pgRouting functions (pgr_dijkstra)
         are not accessible through Django ORM.
         Supports drive, walk, and bike modes with different speed profiles.
+        Results are cached in Redis for 1 hour keyed by coords + mode.
         """
+        cache_key = (
+            "route_"
+            + hashlib.md5(
+                f"{origin.x},{origin.y},{destination.x},{destination.y},{mode}".encode()
+            ).hexdigest()
+        )
+        cached = cache.get(cache_key)
+        if cached:
+            return cached
+
         speeds = self.SPEED_PROFILES.get(mode, self.SPEED_PROFILES["drive"])
 
         # Build SQL fragments for this mode
@@ -193,13 +206,15 @@ class RouteView(APIView):
         # Build turn-by-turn steps
         steps = self._build_steps(street_names)
 
-        return {
+        result = {
             "route": route_geojson,
             "distance_km": distance_km,
             "duration_min": duration_min,
             "steps": steps,
             "mode": mode,
         }
+        cache.set(cache_key, result, timeout=3600)
+        return result
 
     @staticmethod
     def _build_steps(street_names):

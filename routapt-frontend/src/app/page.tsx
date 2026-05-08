@@ -213,6 +213,7 @@ export default function Home() {
         origin={origin}
         destination={destination}
         pinDropMode={pinDropMode}
+        pinLocation={pinLocation}
         onPinDrop={handlePinDrop}
         onBoundsChange={(sw, ne) => setBounds({ sw, ne })}
       />

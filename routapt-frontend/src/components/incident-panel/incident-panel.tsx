@@ -21,6 +21,18 @@ export const IncidentPanel = ({ onClose, onSubmit, pinLocation, pinDropMode, onP
     });
   };
 
+  if (pinDropMode) {
+    return (
+      <div className="pin-drop-bar">
+        <span className="pin-drop-pulse" />
+        <span className="pin-drop-msg">Click on the map to drop a pin</span>
+        <button className="pin-drop-cancel" onClick={() => onPinDropMode(false)}>
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="scrim" onClick={onClose} />

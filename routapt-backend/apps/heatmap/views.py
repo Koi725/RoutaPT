@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -23,10 +24,15 @@ class RoadDensityView(APIView):
     def get(self, request):
         serializer = RoadDensityQuerySerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
+        resolution = serializer.validated_data["resolution"]
 
-        points = HeatmapService.road_density(
-            resolution=serializer.validated_data["resolution"],
-        )
+        cache_key = f"heatmap_roads_{resolution}"
+        cached = cache.get(cache_key)
+        if cached:
+            return Response(HeatmapPointSerializer(cached, many=True).data)
+
+        points = HeatmapService.road_density(resolution=resolution)
+        cache.set(cache_key, points, timeout=1800)
 
         return Response(HeatmapPointSerializer(points, many=True).data)
 
@@ -63,5 +69,11 @@ class NetworkStatsView(APIView):
     """
 
     def get(self, request):
+        cached = cache.get("network_stats")
+        if cached:
+            return Response(NetworkStatsSerializer(cached).data)
+
         stats = HeatmapService.network_stats()
+        cache.set("network_stats", stats, timeout=3600)
+
         return Response(NetworkStatsSerializer(stats).data)

@@ -9,13 +9,27 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - ./routapt-backend/scripts/setup_db.sql:/docker-entrypoint-initdb.d/01_setup.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U routapt -d routapt"]
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - routapt-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: routapt-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     networks:
       - routapt-net
 
@@ -27,15 +41,74 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgis://routapt:${DB_PASSWORD}@db:5432/routapt
+      DB_HOST: db
+      DB_NAME: routapt
+      DB_USER: routapt
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
-      DJANGO_DEBUG: ${DJANGO_DEBUG:-True}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
-      CORS_ALLOWED_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
-    ports:
-      - "8000:8000"
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      CELERY_BROKER_URL: redis://redis:6379/1
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - routapt-net
+
+  celery:
+    build:
+      context: ./routapt-backend
+      dockerfile: Dockerfile
+    container_name: routapt-celery
+    restart: unless-stopped
+    command: celery -A config.celery worker -l info -c 2
+    environment:
+      DATABASE_URL: postgis://routapt:${DB_PASSWORD}@db:5432/routapt
+      DB_HOST: db
+      DB_NAME: routapt
+      DB_USER: routapt
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      CELERY_BROKER_URL: redis://redis:6379/1
+    depends_on:
+      - backend
+    networks:
+      - routapt-net
+
+  celery-beat:
+    build:
+      context: ./routapt-backend
+      dockerfile: Dockerfile
+    container_name: routapt-celery-beat
+    restart: unless-stopped
+    command: celery -A config.celery beat -l info --schedule /tmp/celerybeat-schedule
+    environment:
+      DATABASE_URL: postgis://routapt:${DB_PASSWORD}@db:5432/routapt
+      DB_HOST: db
+      DB_NAME: routapt
+      DB_USER: routapt
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      CELERY_BROKER_URL: redis://redis:6379/1
+    depends_on:
+      - backend
     networks:
       - routapt-net
 
@@ -46,17 +119,32 @@ services:
     container_name: routapt-frontend
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_API_URL: ${API_URL:-http://localhost:8000}
+    depends_on:
+      - backend
     ports:
       - "3000:3000"
+    networks:
+      - routapt-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: routapt-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
+      - frontend
       - backend
     networks:
       - routapt-net
 
 volumes:
-  - pgdata:/var/lib/postgresql/data
-  - ./routapt-backend/scripts/setup_db.sql:/docker-entrypoint-initdb.d/01_setup.sql
+  pgdata:
+  redis-data:
 
 networks:
   routapt-net:

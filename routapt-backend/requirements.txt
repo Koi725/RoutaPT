@@ -26,3 +26,8 @@ gunicorn==22.0.0
 python-decouple==3.8
 requests==2.32.3
 psycopg[binary]>=3.1
+
+# Async tasks + cache
+celery==5.4.0
+django-redis==5.4.0
+redis==5.0.0

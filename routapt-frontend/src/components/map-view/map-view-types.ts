@@ -6,6 +6,7 @@ export interface MapViewProps {
   origin: [number, number] | null;
   destination: [number, number] | null;
   pinDropMode: boolean;
+  pinLocation: { lat: number; lon: number } | null;
   onPinDrop: (lat: number, lon: number) => void;
   onBoundsChange: (sw: [number, number], ne: [number, number]) => void;
 }
