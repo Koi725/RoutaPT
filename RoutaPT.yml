@@ -58,6 +58,8 @@ services:
         condition: service_healthy
     ports:
       - "8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - routapt-net
 
@@ -68,6 +70,8 @@ services:
     container_name: routapt-celery
     restart: unless-stopped
     command: celery -A config.celery worker -l info -c 2
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       DB_NAME: routapt
       DB_USER: routapt
@@ -92,6 +96,8 @@ services:
     container_name: routapt-celery-beat
     restart: unless-stopped
     command: celery -A config.celery beat -l info --schedule /tmp/celerybeat-schedule
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       DB_NAME: routapt
       DB_USER: routapt

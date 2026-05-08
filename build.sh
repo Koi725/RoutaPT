@@ -28,6 +28,11 @@ else
     echo -e "${GREEN}✓ .env file exists${NC}"
 fi
 
+# NOTE: If using local PostgreSQL (not Docker db), run these first:
+# sudo sed -i 's/127.0.0.1\/32/0.0.0.0\/0/' /etc/postgresql/17/main/pg_hba.conf
+# echo "listen_addresses = '*'" | sudo tee -a /etc/postgresql/17/main/postgresql.conf
+# sudo systemctl restart postgresql
+
 # Build images
 echo -e "\n${TEAL}[3/7]${NC} Building Docker images..."
 docker compose -f RoutaPT.yml build --no-cache
