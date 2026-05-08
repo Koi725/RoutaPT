@@ -9,6 +9,12 @@
   height: 100%;
 }
 
+/* Strip default Leaflet divIcon chrome (white box + border) */
+.leaflet-div-icon {
+  background: transparent;
+  border: none;
+}
+
 /* Clean up Leaflet default styles */
 .leaflet-control-attribution {
   font-size: 10px !important;

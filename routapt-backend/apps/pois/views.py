@@ -59,6 +59,9 @@ class SpeedCameraListView(APIView):
     Get speed cameras within a map bounding box.
 
     GET /api/pois/cameras/?sw_lat=38.7&sw_lon=-9.2&ne_lat=38.8&ne_lon=-9.1
+
+    Queries planet_osm_point directly because the OSM import does not
+    populate the managed speed_cameras table for Portugal.
     """
 
     def get(self, request):
@@ -66,18 +69,40 @@ class SpeedCameraListView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        bbox = Polygon.from_bbox(
-            (
-                data["sw_lon"],
-                data["sw_lat"],
-                data["ne_lon"],
-                data["ne_lat"],
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT osm_id, name,
+                    COALESCE(tags->'maxspeed', '') AS speed_limit,
+                    ST_Y(way) AS lat, ST_X(way) AS lon
+                FROM planet_osm_point
+                WHERE (highway = 'speed_camera'
+                    OR amenity = 'speed_camera'
+                    OR (tags ? 'enforcement'))
+                AND way && ST_MakeEnvelope(%s, %s, %s, %s, 4326)
+                LIMIT 100
+            """,
+                [data["sw_lon"], data["sw_lat"], data["ne_lon"], data["ne_lat"]],
             )
-        )
 
-        queryset = SpeedCamera.objects.filter(location__within=bbox)
+            features = []
+            for row in cursor.fetchall():
+                features.append(
+                    {
+                        "type": "Feature",
+                        "properties": {
+                            "osm_id": row[0],
+                            "name": row[1],
+                            "speed_limit": row[2],
+                        },
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [row[4], row[3]],
+                        },
+                    }
+                )
 
-        return Response(SpeedCameraSerializer(queryset, many=True).data)
+        return Response({"type": "FeatureCollection", "features": features})
 
 
 class NearRouteView(APIView):
