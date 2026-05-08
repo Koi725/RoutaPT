@@ -9,16 +9,19 @@ import { getIncidents } from "@/lib/incidents/incidents.api";
 import { getPOIs, getCameras } from "@/lib/pois/pois.api";
 import { getRoadDensity } from "@/lib/heatmap/heatmap.api";
 
-const POI_COLORS: Record<string, string> = {
-  fuel: "#f59e0b",
-  hospital: "#dc2626",
-  police: "#2563eb",
-  parking: "#6b7280",
-  restaurant: "#ea580c",
-  hotel: "#7c3aed",
-  pharmacy: "#10b981",
-  bank: "#0d9488",
-  other: "#9ca3af",
+const poiEmoji = (amenity: string | undefined | null, category: string): string => {
+  const a = amenity || "";
+  if (a === "fuel" || category === "fuel") return "⛽";
+  if (a === "hospital" || a === "clinic" || category === "hospital") return "🏥";
+  if (a === "restaurant" || a === "fast_food" || a === "cafe" || category === "restaurant") return "🍽️";
+  if (a === "hotel" || a === "hostel" || a === "guest_house" || category === "hotel") return "🏨";
+  if (a === "pharmacy" || category === "pharmacy") return "💊";
+  if (a === "bank" || a === "atm" || category === "bank") return "🏧";
+  if (a === "parking" || category === "parking") return "🅿️";
+  if (a === "police" || category === "police") return "👮";
+  if (a === "school" || a === "university" || a === "college") return "🎓";
+  if (a === "place_of_worship") return "⛪";
+  return "📍";
 };
 
 export const MapView = ({
@@ -265,20 +268,26 @@ export const MapView = ({
           data.features.forEach((feature) => {
             const coords = feature.geometry.coordinates;
             const props = feature.properties;
-            const color = POI_COLORS[props.category] || POI_COLORS.other;
+            const emoji = poiEmoji(props.amenity, props.category);
+            const lat = coords[1];
+            const lon = coords[0];
 
-            const marker = L.circleMarker([coords[1], coords[0]], {
-              radius: 6,
-              fillColor: color,
-              fillOpacity: 0.9,
-              color: "#fff",
-              weight: 2,
-            }).bindPopup(`
-              <div style="font-family:system-ui;font-size:13px">
-                <strong>${props.name || "Unnamed"}</strong>
-                <p style="margin:4px 0 0;color:#666;text-transform:capitalize">
-                  ${props.category} · ${props.amenity || ""}
-                </p>
+            const icon = L.divIcon({
+              html: `<div style="width:28px;height:28px;border-radius:8px;background:white;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,0.15);border:1px solid rgba(0,0,0,0.08)">${emoji}</div>`,
+              iconSize: [28, 28],
+              iconAnchor: [14, 14],
+              className: "",
+            });
+
+            const marker = L.marker([lat, lon], { icon }).bindPopup(`
+              <div style="font-family:system-ui">
+                <div style="font-size:14px;font-weight:700;color:#1a1a1a">${props.name || "Unnamed"}</div>
+                <div style="font-size:12px;color:#888;margin-top:2px;text-transform:capitalize">
+                  ${props.category}${props.amenity ? ` · ${props.amenity}` : ""}
+                </div>
+                <div style="font-size:11px;color:#999;margin-top:6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">
+                  ${lat.toFixed(5)}, ${lon.toFixed(5)}
+                </div>
               </div>
             `);
 
