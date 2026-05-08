@@ -40,17 +40,16 @@ services:
     container_name: routapt-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgis://routapt:${DB_PASSWORD}@db:5432/routapt
-      DB_HOST: db
       DB_NAME: routapt
       DB_USER: routapt
       DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST:-db}
       DB_PORT: 5432
       REDIS_URL: redis://redis:6379/0
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
       CELERY_BROKER_URL: redis://redis:6379/1
     depends_on:
       db:
@@ -58,7 +57,7 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "8000"
     networks:
       - routapt-net
 
@@ -70,17 +69,16 @@ services:
     restart: unless-stopped
     command: celery -A config.celery worker -l info -c 2
     environment:
-      DATABASE_URL: postgis://routapt:${DB_PASSWORD}@db:5432/routapt
-      DB_HOST: db
       DB_NAME: routapt
       DB_USER: routapt
       DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST:-db}
       DB_PORT: 5432
       REDIS_URL: redis://redis:6379/0
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
       CELERY_BROKER_URL: redis://redis:6379/1
     depends_on:
       - backend
@@ -95,17 +93,16 @@ services:
     restart: unless-stopped
     command: celery -A config.celery beat -l info --schedule /tmp/celerybeat-schedule
     environment:
-      DATABASE_URL: postgis://routapt:${DB_PASSWORD}@db:5432/routapt
-      DB_HOST: db
       DB_NAME: routapt
       DB_USER: routapt
       DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST:-db}
       DB_PORT: 5432
       REDIS_URL: redis://redis:6379/0
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
       CELERY_BROKER_URL: redis://redis:6379/1
     depends_on:
       - backend
