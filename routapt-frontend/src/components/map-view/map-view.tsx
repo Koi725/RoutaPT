@@ -3,8 +3,23 @@
 import { useEffect, useRef, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.heat";
 import { MapViewProps } from "./map-view-types";
 import { getIncidents } from "@/lib/incidents/incidents.api";
+import { getPOIs, getCameras } from "@/lib/pois/pois.api";
+import { getRoadDensity } from "@/lib/heatmap/heatmap.api";
+
+const POI_COLORS: Record<string, string> = {
+  fuel: "#f59e0b",
+  hospital: "#dc2626",
+  police: "#2563eb",
+  parking: "#6b7280",
+  restaurant: "#ea580c",
+  hotel: "#7c3aed",
+  pharmacy: "#10b981",
+  bank: "#0d9488",
+  other: "#9ca3af",
+};
 
 export const MapView = ({
   layers,
@@ -20,6 +35,9 @@ export const MapView = ({
   const originMarkerRef = useRef<L.CircleMarker | null>(null);
   const destMarkerRef = useRef<L.Marker | null>(null);
   const incidentLayerRef = useRef<L.LayerGroup | null>(null);
+  const poiLayerRef = useRef<L.LayerGroup | null>(null);
+  const cameraLayerRef = useRef<L.LayerGroup | null>(null);
+  const heatLayerRef = useRef<L.HeatLayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Initialize map
@@ -38,6 +56,8 @@ export const MapView = ({
     }).addTo(map);
 
     incidentLayerRef.current = L.layerGroup().addTo(map);
+    poiLayerRef.current = L.layerGroup().addTo(map);
+    cameraLayerRef.current = L.layerGroup().addTo(map);
 
     map.on("moveend", () => {
       const bounds = map.getBounds();
@@ -219,6 +239,170 @@ export const MapView = ({
     map.on("moveend", loadIncidents);
     return () => { map.off("moveend", loadIncidents); };
   }, [layers.incidents]);
+
+  // Load POIs when layer is toggled on
+  useEffect(() => {
+    const map = mapRef.current;
+    const poiGroup = poiLayerRef.current;
+    if (!map || !poiGroup) return;
+
+    poiGroup.clearLayers();
+
+    if (!layers.pois) return;
+
+    const loadPOIs = async () => {
+      if (map.getZoom() < 12) return;
+      const bounds = map.getBounds();
+      try {
+        const data = await getPOIs(
+          bounds.getSouth(), bounds.getWest(),
+          bounds.getNorth(), bounds.getEast()
+        );
+
+        poiGroup.clearLayers();
+
+        if (data.features) {
+          data.features.forEach((feature) => {
+            const coords = feature.geometry.coordinates;
+            const props = feature.properties;
+            const color = POI_COLORS[props.category] || POI_COLORS.other;
+
+            const marker = L.circleMarker([coords[1], coords[0]], {
+              radius: 6,
+              fillColor: color,
+              fillOpacity: 0.9,
+              color: "#fff",
+              weight: 2,
+            }).bindPopup(`
+              <div style="font-family:system-ui;font-size:13px">
+                <strong>${props.name || "Unnamed"}</strong>
+                <p style="margin:4px 0 0;color:#666;text-transform:capitalize">
+                  ${props.category} · ${props.amenity || ""}
+                </p>
+              </div>
+            `);
+
+            poiGroup.addLayer(marker);
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load POIs:", err);
+      }
+    };
+
+    loadPOIs();
+
+    map.on("moveend", loadPOIs);
+    return () => { map.off("moveend", loadPOIs); };
+  }, [layers.pois]);
+
+  // Load speed cameras when layer is toggled on
+  useEffect(() => {
+    const map = mapRef.current;
+    const cameraGroup = cameraLayerRef.current;
+    if (!map || !cameraGroup) return;
+
+    cameraGroup.clearLayers();
+
+    if (!layers.cameras) return;
+
+    const loadCameras = async () => {
+      if (map.getZoom() < 11) return;
+      const bounds = map.getBounds();
+      try {
+        const data = await getCameras(
+          bounds.getSouth(), bounds.getWest(),
+          bounds.getNorth(), bounds.getEast()
+        );
+
+        cameraGroup.clearLayers();
+
+        if (data.features) {
+          data.features.forEach((feature) => {
+            const coords = feature.geometry.coordinates;
+            const props = feature.properties;
+
+            const icon = L.divIcon({
+              html: `<div style="width:26px;height:26px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.25);border:2px solid white">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              </div>`,
+              iconSize: [26, 26],
+              iconAnchor: [13, 13],
+              className: "",
+            });
+
+            const marker = L.marker([coords[1], coords[0]], { icon })
+              .bindPopup(`
+                <div style="font-family:system-ui;font-size:13px">
+                  <strong>Speed Camera</strong>
+                  ${props.speed_limit ? `<p style="margin:4px 0 0;color:#dc2626;font-weight:600">${props.speed_limit} km/h</p>` : ""}
+                  ${props.direction ? `<p style="margin:2px 0 0;color:#666;font-size:11px">Direction: ${props.direction}</p>` : ""}
+                </div>
+              `);
+
+            cameraGroup.addLayer(marker);
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load cameras:", err);
+      }
+    };
+
+    loadCameras();
+
+    map.on("moveend", loadCameras);
+    return () => { map.off("moveend", loadCameras); };
+  }, [layers.cameras]);
+
+  // Load road density heatmap when layer is toggled on
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (heatLayerRef.current) {
+      map.removeLayer(heatLayerRef.current);
+      heatLayerRef.current = null;
+    }
+
+    if (!layers.heatmap) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const points = await getRoadDensity(0.02);
+        if (cancelled || !mapRef.current) return;
+
+        const heatPoints: [number, number, number][] = points.map((p) => [
+          p.lat,
+          p.lon,
+          p.weight,
+        ]);
+
+        const layer = L.heatLayer(heatPoints, {
+          radius: 18,
+          blur: 22,
+          maxZoom: 12,
+          minOpacity: 0.35,
+          gradient: {
+            0.2: "#3b82f6",
+            0.4: "#10b981",
+            0.6: "#f59e0b",
+            0.8: "#ef4444",
+            1.0: "#7c2d12",
+          },
+        }).addTo(mapRef.current);
+
+        heatLayerRef.current = layer;
+      } catch (err) {
+        console.error("Failed to load heatmap:", err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [layers.heatmap]);
 
   // Expose map controls
   useEffect(() => {
