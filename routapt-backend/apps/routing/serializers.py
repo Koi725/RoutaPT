@@ -32,3 +32,21 @@ class GeocodeRequestSerializer(serializers.Serializer):
     q = serializers.CharField(
         max_length=255, help_text="Address or place name to search"
     )
+
+
+class IsochroneRequestSerializer(serializers.Serializer):
+    """Validates incoming isochrone (reachability) requests."""
+
+    lat = serializers.FloatField(min_value=-90, max_value=90)
+    lon = serializers.FloatField(min_value=-180, max_value=180)
+    max_cost = serializers.FloatField(min_value=0.1)
+    mode = serializers.ChoiceField(
+        choices=["distance", "time"],
+        default="distance",
+        required=False,
+    )
+    cost_type = serializers.ChoiceField(
+        choices=["drive", "walk", "bike"],
+        default="drive",
+        required=False,
+    )
