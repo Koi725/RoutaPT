@@ -9,6 +9,7 @@ from .serializers import (
     RouteRequestSerializer,
     RouteResponseSerializer,
     GeocodeRequestSerializer,
+    IsochroneRequestSerializer,
 )
 
 import hashlib
@@ -259,6 +260,200 @@ class RouteView(APIView):
         )
 
         return steps
+
+
+class IsochroneView(APIView):
+    """
+    Compute a road-network-reachable area (isochrone) from a click point.
+
+    GET /api/routing/isochrone/?lat=40.64&lon=-8.65&max_cost=5000&mode=distance
+
+    Pipeline:
+        1. Snap click point to nearest graph vertex.
+        2. Run pgr_drivingDistance over an edges SQL restricted to a bbox
+           around the start (keeps the query fast on 1.9M vertices).
+        3. Build a polygon hull (ConcaveHull, fallback ConvexHull) around
+           reachable vertex geometries.
+        4. Count hospitals/clinics that fall inside the hull.
+
+    cost = ST_Length(way)            for mode=distance (meters)
+    cost = ST_Length(way) / (v*0.2778) for mode=time (seconds, v in km/h)
+    """
+
+    SPEED_BY_HIGHWAY = {
+        "motorway": 110,
+        "motorway_link": 80,
+        "trunk": 90,
+        "trunk_link": 70,
+        "primary": 70,
+        "primary_link": 55,
+        "secondary": 50,
+        "tertiary": 45,
+        "residential": 30,
+        "living_street": 20,
+        "service": 20,
+        "unclassified": 40,
+    }
+    DEFAULT_SPEED = 40
+
+    def get(self, request):
+        serializer = IsochroneRequestSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        lat = data["lat"]
+        lon = data["lon"]
+        max_cost = float(data["max_cost"])
+        mode = data.get("mode", "distance")
+
+        cache_key = "iso_" + hashlib.md5(
+            f"{lat:.5f},{lon:.5f},{max_cost},{mode}".encode()
+        ).hexdigest()
+        cached = cache.get(cache_key)
+        if cached:
+            return Response(cached)
+
+        try:
+            result = self._compute(lat, lon, max_cost, mode)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response(
+                {"error": f"Isochrone computation failed: {str(e)}"},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+
+        cache.set(cache_key, result, timeout=3600)
+        return Response(result)
+
+    def _compute(self, lat, lon, max_cost, mode):
+        # bbox radius in meters around start. The graph (planet_osm_line,
+        # vertices) is stored in EPSG:4326 here, so we compute the bbox in
+        # 3857 via ST_Expand and intersect against ST_Transform(way, 3857)
+        # — that keeps the spatial check fast and metric-correct.
+        if mode == "time":
+            # max_cost is minutes — convert to seconds for pgr cost.
+            cost_seconds = max_cost * 60.0
+            # Headroom: 110 km/h ceiling on a motorway * 1.3 detour padding
+            bbox_radius_m = (max_cost / 60.0) * 110_000.0 * 1.3
+            edge_cost_expr = self._time_cost_expr()
+            pgr_cost = cost_seconds
+        else:
+            bbox_radius_m = max_cost * 1.3  # 30% padding for road detour
+            edge_cost_expr = "ST_Length(way::geography)"
+            pgr_cost = max_cost
+
+        # Hard cap so a buggy or huge max_cost can't explode the bbox.
+        bbox_radius_m = max(500.0, min(bbox_radius_m, 30000.0))
+
+        with connection.cursor() as cursor:
+            # Hard statement timeout so the routing call cannot hang gunicorn
+            # for more than 15s even under pathological input.
+            cursor.execute("SET LOCAL statement_timeout = '15000'")
+
+            # 1) Nearest graph vertex to click point (graph is in 4326)
+            cursor.execute(
+                """
+                SELECT id
+                FROM planet_osm_line_vertices_pgr
+                ORDER BY the_geom <-> ST_SetSRID(ST_MakePoint(%s, %s), 4326)
+                LIMIT 1
+                """,
+                [lon, lat],
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise ValueError("No graph vertex found near click point")
+            start_vid = row[0]
+
+            # 2) Build edges SQL constrained to a metric bbox around the start.
+            # We pre-resolve start_geom_3857 to a literal in the inlined SQL
+            # because pgr_drivingDistance treats this as plain text and we
+            # don't want PG to re-evaluate ST_Transform per edge.
+            # Metric bbox: expand the start point in 3857 by radius_m, then
+            # transform the bbox back to 4326 so it can use the GIST index on
+            # planet_osm_line(way).
+            bbox_4326 = (
+                "ST_Transform("
+                "  ST_Expand("
+                f"    ST_Transform(ST_SetSRID(ST_MakePoint({lon}, {lat}), 4326), 3857),"
+                f"    {float(bbox_radius_m)}"
+                "  ), 4326)"
+            )
+            edges_sql = (
+                "SELECT gid AS id, source, target, "
+                f"{edge_cost_expr} AS cost, "
+                f"{edge_cost_expr} AS reverse_cost "
+                "FROM planet_osm_line "
+                "WHERE source IS NOT NULL AND target IS NOT NULL "
+                "AND highway IS NOT NULL "
+                f"AND way && {bbox_4326}"
+            )
+
+            cursor.execute(
+                """
+                WITH reachable AS (
+                    SELECT dd.node
+                    FROM pgr_drivingDistance(%s, %s, %s, directed := false) AS dd
+                ),
+                pts AS (
+                    SELECT v.the_geom AS g
+                    FROM reachable r
+                    JOIN planet_osm_line_vertices_pgr v ON v.id = r.node
+                ),
+                pts_3857 AS (
+                    SELECT ST_Transform(g, 3857) AS g FROM pts
+                ),
+                hull AS (
+                    SELECT COALESCE(
+                        ST_ConcaveHull(ST_Collect(g), 0.8),
+                        ST_ConvexHull(ST_Collect(g))
+                    ) AS geom_3857
+                    FROM pts_3857
+                ),
+                hull_4326 AS (
+                    SELECT ST_Transform(geom_3857, 4326) AS geom FROM hull
+                )
+                SELECT
+                    ST_AsGeoJSON(geom),
+                    (
+                        SELECT COUNT(*)
+                        FROM planet_osm_point p, hull_4326 h
+                        WHERE p.amenity IN ('hospital','clinic')
+                        AND ST_Contains(h.geom, p.way)
+                    )
+                FROM hull_4326
+                """,
+                [edges_sql, int(start_vid), float(pgr_cost)],
+            )
+            row = cursor.fetchone()
+
+        if not row or not row[0]:
+            raise ValueError("No reachable area found from this point")
+
+        hull_geojson = json.loads(row[0])
+        facilities = int(row[1] or 0)
+
+        return {
+            "isochrone": hull_geojson,
+            "reachable_facilities": facilities,
+            "max_cost": max_cost,
+            "mode": mode,
+        }
+
+    @classmethod
+    def _time_cost_expr(cls):
+        # Builds a CASE returning seconds for a road segment.
+        # cost = ST_Length(way::geography) / (speed_kmh * 0.2778)
+        cases = " ".join(
+            f"WHEN '{hw}' THEN {spd}"
+            for hw, spd in cls.SPEED_BY_HIGHWAY.items()
+        )
+        return (
+            "ST_Length(way::geography) / (("
+            f"CASE highway {cases} ELSE {cls.DEFAULT_SPEED} END"
+            ") * 0.2778)"
+        )
 
 
 class GeocodeView(APIView):
