@@ -14,9 +14,10 @@ import { IncidentPanel, IncidentFormData } from "@/components/incident-panel";
 import { Toast } from "@/components/toast";
 import { useToast } from "@/hooks/use-toast";
 
-import { calculateRoute, geocodeSearch, TravelMode } from "@/lib/routing/routing.api";
+import { calculateRoute, geocodeSearch, TravelMode, calculateIsochrone, IsochroneMode } from "@/lib/routing/routing.api";
 import { createIncident } from "@/lib/incidents/incidents.api";
 import { getNetworkStats } from "@/lib/heatmap/heatmap.api";
+import { IsochronePanel } from "@/components/isochrone-panel";
 
 
 // Leaflet must be client-side only — no SSR
@@ -43,7 +44,17 @@ export default function Home() {
     cameras: true,
     heatmap: false,
     incidents: true,
+    isochrone: false,
   });
+
+  // Isochrone state
+  const [isochroneMode, setIsochroneMode] = useState<IsochroneMode>("distance");
+  const [isochroneValue, setIsochroneValue] = useState<number>(5000); // meters or minutes
+  const [isochroneGeoJSON, setIsochroneGeoJSON] = useState<GeoJSON.Polygon | null>(null);
+  const [isochroneOrigin, setIsochroneOrigin] = useState<{ lat: number; lon: number } | null>(null);
+  const [isochroneFacilities, setIsochroneFacilities] = useState<number | null>(null);
+  const [isochroneLoading, setIsochroneLoading] = useState(false);
+  const [isochroneError, setIsochroneError] = useState<string | null>(null);
 
   // Panel state
   const [reportOpen, setReportOpen] = useState(false);
@@ -68,6 +79,42 @@ export default function Home() {
   const toggleLayer = useCallback((key: keyof LayerState) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
+
+  // Switching between distance/time resets the value to a sensible default
+  // so we don't end up sending 10000 minutes or 5 meters.
+  const handleIsochroneModeChange = useCallback((m: IsochroneMode) => {
+    setIsochroneMode(m);
+    setIsochroneValue(m === "time" ? 5 : 5000);
+  }, []);
+
+  const clearIsochrone = useCallback(() => {
+    setIsochroneGeoJSON(null);
+    setIsochroneOrigin(null);
+    setIsochroneFacilities(null);
+    setIsochroneError(null);
+  }, []);
+
+  // Click on map while reachability mode is on
+  const handleIsochroneClick = useCallback(async (lat: number, lon: number) => {
+    setIsochroneLoading(true);
+    setIsochroneError(null);
+    setIsochroneOrigin({ lat, lon });
+    try {
+      const res = await calculateIsochrone(lat, lon, isochroneValue, isochroneMode);
+      setIsochroneGeoJSON(res.isochrone);
+      setIsochroneFacilities(res.reachable_facilities);
+      const unit = isochroneMode === "time" ? "min" : "km";
+      const v = isochroneMode === "time" ? isochroneValue : isochroneValue / 1000;
+      toast.show(`${res.reachable_facilities} hospitals/clinics within ${v} ${unit}`);
+    } catch (err: any) {
+      setIsochroneGeoJSON(null);
+      setIsochroneFacilities(null);
+      setIsochroneError(err?.message || "Failed to compute isochrone");
+      toast.show("Isochrone failed");
+    } finally {
+      setIsochroneLoading(false);
+    }
+  }, [isochroneValue, isochroneMode, toast]);
 
   // Calculate route with all three modes
   const handleRoute = useCallback(async () => {
@@ -216,6 +263,10 @@ export default function Home() {
         pinLocation={pinLocation}
         onPinDrop={handlePinDrop}
         onBoundsChange={(sw, ne) => setBounds({ sw, ne })}
+        isochroneMode={layers.isochrone}
+        isochroneGeoJSON={isochroneGeoJSON}
+        isochroneOrigin={isochroneOrigin}
+        onIsochroneClick={handleIsochroneClick}
       />
 
       <Brand />
@@ -230,6 +281,19 @@ export default function Home() {
       />
 
       <LayerToggle layers={layers} onToggle={toggleLayer} />
+
+      {layers.isochrone && (
+        <IsochronePanel
+          mode={isochroneMode}
+          value={isochroneValue}
+          onModeChange={handleIsochroneModeChange}
+          onValueChange={setIsochroneValue}
+          reachableFacilities={isochroneFacilities}
+          loading={isochroneLoading}
+          error={isochroneError}
+          onClear={clearIsochrone}
+        />
+      )}
 
       <MapControls
         onZoomIn={handleZoomIn}
