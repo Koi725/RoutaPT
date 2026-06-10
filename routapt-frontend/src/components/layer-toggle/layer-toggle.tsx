@@ -1,4 +1,4 @@
-import { IcPin, IcCamera, IcFire, IcAlert } from "../icons";
+import { IcPin, IcCamera, IcFire, IcAlert, IcCompass } from "../icons";
 import { LayerToggleProps, LayerState } from "./layer-toggle-types";
 
 const LAYER_ITEMS: Array<{
@@ -12,6 +12,7 @@ const LAYER_ITEMS: Array<{
   { key: "cameras", label: "Cameras", tooltip: "Show speed camera locations on the map", icon: <IcCamera size={13} />, accent: "accent-blue" },
   { key: "heatmap", label: "Heatmap", tooltip: "Show road density heatmap overlay", icon: <IcFire size={13} />, accent: "accent-coral" },
   { key: "incidents", label: "Incidents", tooltip: "Show reported road incidents", icon: <IcAlert size={13} />, accent: "accent-amber" },
+  { key: "isochrone", label: "Reach", tooltip: "Click the map to draw the area reachable by road within a time/distance limit", icon: <IcCompass size={13} />, accent: "accent-teal" },
 ];
 
 export const LayerToggle = ({ layers, onToggle }: LayerToggleProps) => (

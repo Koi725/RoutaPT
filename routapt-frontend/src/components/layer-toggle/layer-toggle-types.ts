@@ -3,6 +3,7 @@ export interface LayerState {
   cameras: boolean;
   heatmap: boolean;
   incidents: boolean;
+  isochrone: boolean;
 }
 
 export interface LayerToggleProps {
