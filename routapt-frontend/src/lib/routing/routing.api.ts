@@ -46,3 +46,23 @@ export async function searchPOIs(query: string): Promise<POISearchResult[]> {
     `/api/pois/search/?q=${encodeURIComponent(query)}`
   );
 }
+
+export type IsochroneMode = 'distance' | 'time';
+
+export interface IsochroneResponse {
+  isochrone: GeoJSON.Polygon;
+  reachable_facilities: number;
+  max_cost: number;
+  mode: IsochroneMode;
+}
+
+export async function calculateIsochrone(
+  lat: number,
+  lon: number,
+  maxCost: number,
+  mode: IsochroneMode,
+): Promise<IsochroneResponse> {
+  return apiFetch<IsochroneResponse>(
+    `/api/routing/isochrone/?lat=${lat}&lon=${lon}&max_cost=${maxCost}&mode=${mode}`,
+  );
+}
