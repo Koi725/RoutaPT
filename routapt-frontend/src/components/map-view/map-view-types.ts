@@ -9,4 +9,8 @@ export interface MapViewProps {
   pinLocation: { lat: number; lon: number } | null;
   onPinDrop: (lat: number, lon: number) => void;
   onBoundsChange: (sw: [number, number], ne: [number, number]) => void;
+  isochroneMode: boolean;
+  isochroneGeoJSON: GeoJSON.Polygon | null;
+  isochroneOrigin: { lat: number; lon: number } | null;
+  onIsochroneClick: (lat: number, lon: number) => void;
 }

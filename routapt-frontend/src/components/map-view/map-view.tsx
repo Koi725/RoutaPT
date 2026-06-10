@@ -33,6 +33,10 @@ export const MapView = ({
   pinLocation,
   onPinDrop,
   onBoundsChange,
+  isochroneMode,
+  isochroneGeoJSON,
+  isochroneOrigin,
+  onIsochroneClick,
 }: MapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const routeLayerRef = useRef<L.GeoJSON | null>(null);
@@ -43,6 +47,8 @@ export const MapView = ({
   const cameraLayerRef = useRef<L.LayerGroup | null>(null);
   const heatLayerRef = useRef<L.HeatLayer | null>(null);
   const pinMarkerRef = useRef<L.Marker | null>(null);
+  const isochroneLayerRef = useRef<L.GeoJSON | null>(null);
+  const isochroneOriginRef = useRef<L.CircleMarker | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Initialize map
@@ -90,17 +96,19 @@ export const MapView = ({
     const handler = (e: L.LeafletMouseEvent) => {
       if (pinDropMode) {
         onPinDrop(e.latlng.lat, e.latlng.lng);
+      } else if (isochroneMode) {
+        onIsochroneClick(e.latlng.lat, e.latlng.lng);
       }
     };
 
     map.on("click", handler);
-    map.getContainer().style.cursor = pinDropMode ? "crosshair" : "";
+    map.getContainer().style.cursor = (pinDropMode || isochroneMode) ? "crosshair" : "";
 
     return () => {
       map.off("click", handler);
       map.getContainer().style.cursor = "";
     };
-  }, [pinDropMode, onPinDrop]);
+  }, [pinDropMode, onPinDrop, isochroneMode, onIsochroneClick]);
 
   // Render the dropped pin marker from pinLocation prop
   useEffect(() => {
@@ -125,6 +133,42 @@ export const MapView = ({
       pinMarkerRef.current = marker;
     }
   }, [pinLocation]);
+
+  // Draw isochrone polygon + origin marker
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (isochroneLayerRef.current) {
+      map.removeLayer(isochroneLayerRef.current);
+      isochroneLayerRef.current = null;
+    }
+    if (isochroneOriginRef.current) {
+      map.removeLayer(isochroneOriginRef.current);
+      isochroneOriginRef.current = null;
+    }
+
+    if (isochroneGeoJSON) {
+      const layer = L.geoJSON(isochroneGeoJSON as any, {
+        style: {
+          color: "#0d9488",
+          weight: 2.5,
+          opacity: 0.9,
+          fillColor: "#14b8a6",
+          fillOpacity: 0.18,
+        },
+      }).addTo(map);
+      isochroneLayerRef.current = layer;
+      map.fitBounds(layer.getBounds(), { padding: [60, 60] });
+    }
+
+    if (isochroneOrigin) {
+      isochroneOriginRef.current = L.circleMarker(
+        [isochroneOrigin.lat, isochroneOrigin.lon],
+        { radius: 8, fillColor: "#0d9488", fillOpacity: 1, color: "#fff", weight: 3 },
+      ).addTo(map);
+    }
+  }, [isochroneGeoJSON, isochroneOrigin]);
 
   // Draw route
   useEffect(() => {
